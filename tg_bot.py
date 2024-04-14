@@ -16,3 +16,18 @@ def start_tg_bot(message):
     btn1 = types.InlineKeyboardButton('Открыть 📖', callback_data='open')
     markup.row(btn1)
     bot.reply_to(message, 'Телефонная книга', reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'open')
+def open_menu(callback):
+    markup = types.InlineKeyboardMarkup()
+    btn2 = types.InlineKeyboardButton('Добавить контакт 🤝', callback_data='add')
+    btn3 = types.InlineKeyboardButton('Просмотр контактов 👀', callback_data='show')
+    markup.row(btn2, btn3)
+    btn4 = types.InlineKeyboardButton('Поиск контакта 🔍', callback_data='find')
+    btn5 = types.InlineKeyboardButton('Удалить контакт 🗑', callback_data='delete')
+    markup.row(btn4, btn5)
+    btn6 = types.InlineKeyboardButton('Изменить контакт 👥', callback_data='change')
+    btn7 = types.InlineKeyboardButton('Выход из меню 🚶', callback_data='exit')
+    markup.row(btn6, btn7)
+    bot.send_message(callback.message.chat.id, '<b>Меню:</b>', reply_markup=markup,parse_mode='html')
+
