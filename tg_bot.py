@@ -197,3 +197,77 @@ def save_contact(message, user_info):
     markup.row(mmm)
     bot.send_message(message.chat.id, '<b>Контакт сохранен ✍️.</b>', reply_markup=markup,parse_mode='html')
 
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'delete')
+def porcces_delete_user(callback):
+    try:
+        with open('users.json', 'r', encoding='utf-8') as file:
+                contacts = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        contacts = [] 
+    if not contacts:
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(callback.message.chat.id, '<b>Список контактов пуст: 🥲</b>', reply_markup=markup,parse_mode='html')
+    else:    
+        bot.send_message(callback.message.chat.id, "Введите имя контакта для удаления:🧐 ")
+        bot.register_next_step_handler(callback.message, delete_contact)
+
+def delete_contact(message):
+    search_query = message.text.lower()
+    try:
+        with open('users.json', 'r', encoding='utf-8') as file:
+            contacts = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        contacts = []
+    
+    found_contacts = []
+    indexes_to_modify = []
+    for i, contact in enumerate(contacts):
+        if search_query in str(contact.get('user name', '')).lower():
+            found_contacts.append(contact)
+            indexes_to_modify.append(i)
+    
+    if found_contacts:
+        for i, contact in enumerate(found_contacts, 1):
+            bot.send_message(message.chat.id, f"{i}. {contact}")
+
+        bot.send_message(message.chat.id, "Введите номер контакта для удаления:🧐")
+        bot.register_next_step_handler(message, lambda m: delete_selected_contact(m, indexes_to_modify, contacts))
+    else:
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(message.chat.id, '<b>Контакт не найден.🧐</b>', reply_markup=markup,parse_mode='html')
+        
+def delete_selected_contact(message, indexes_to_modify, contacts):
+    try:
+        index = int(message.text) - 1
+        if index in range(len(indexes_to_modify)):
+            del contacts[indexes_to_modify[index]]
+            with open('users.json', 'w', encoding='utf-8') as file:
+                json.dump(contacts, file, ensure_ascii=False, indent=4)
+                
+            markup = types.InlineKeyboardMarkup()
+            mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+            markup.row(mmm)
+            bot.send_message(message.chat.id, '<b>Контакт успешно удален.⚰️</b>', reply_markup=markup,parse_mode='html')
+        else:      
+            markup = types.InlineKeyboardMarkup()
+            mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+            markup.row(mmm)
+            bot.send_message(message.chat.id, '<b>Некорректный номер контакта.😑</b>', reply_markup=markup,parse_mode='html')
+    except ValueError:
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(message.chat.id, '<b>ведите корректный номер контакта.😑</b>', reply_markup=markup,parse_mode='html')
+
+def load_contacts():
+    try:
+        with open('users.json', 'r', encoding='utf-8') as file:
+            contacts = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        contacts = []
+    return contacts
