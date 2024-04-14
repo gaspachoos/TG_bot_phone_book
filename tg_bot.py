@@ -410,3 +410,8 @@ def update_contacts(index, new_contact):
         json.dump(contacts, file, ensure_ascii=False, indent=4)
     
     contacts.append(new_contact)
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'exit')
+def handle_exit_button(callback):
+    bot.send_message(callback.message.chat.id, f'{callback.from_user.first_name}, надеюсь вам было чуточку интересно в процессе испытаний <b>Телефонной книги</b>, благодарим вас 🙂', parse_mode='html')
+    bot.send_message(callback.message.chat.id, "❤️")
