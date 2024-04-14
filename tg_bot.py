@@ -415,3 +415,5 @@ def update_contacts(index, new_contact):
 def handle_exit_button(callback):
     bot.send_message(callback.message.chat.id, f'{callback.from_user.first_name}, надеюсь вам было чуточку интересно в процессе испытаний <b>Телефонной книги</b>, благодарим вас 🙂', parse_mode='html')
     bot.send_message(callback.message.chat.id, "❤️")
+
+bot.polling()
