@@ -271,3 +271,142 @@ def load_contacts():
     except (FileNotFoundError, json.JSONDecodeError):
         contacts = []
     return contacts
+
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'change')
+def porcces_change_user(callback):
+    try:
+        with open('users.json', 'r', encoding='utf-8') as file:
+                contacts = json.load(file)
+    except (FileNotFoundError, json.JSONDecodeError):
+        contacts = [] 
+    if not contacts:
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(callback.message.chat.id, '<b>Список контактов пуст: 🥲</b>', reply_markup=markup,parse_mode='html')
+        
+    else:    
+        bot.send_message(callback.message.chat.id, "Введите имя контакта для изменения:🧐 ")
+        bot.register_next_step_handler(callback.message, change_contact)
+
+def change_contact(message):
+    search_query = message.text.lower()
+    contacts = load_contacts()
+    if not contacts:
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(message.chat.id, '<b>Список контактов пуст: 🥲</b>', reply_markup=markup,parse_mode='html')
+        return
+
+    found_contacts = []
+    for i, contact in enumerate(contacts):
+        if search_query in str(contact.get('user name', '')).lower():
+            found_contacts.append((i, contact))
+
+    if found_contacts:
+        response_text = "Выберите контакт для изменения:\n"
+        for i, contact in enumerate(found_contacts, 1):
+            response_text += f"{i}. name: {contact[1]['user name']}, phone: {contact[1]['user phone']}, email: {contact[1]['user email']}\n"
+        bot.send_message(message.chat.id, response_text)
+
+        bot.register_next_step_handler(message, handle_contact_selection, found_contacts)
+    else:
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(message.chat.id, '<b>Контакт не найден: 🥲</b>', reply_markup=markup,parse_mode='html')
+
+def handle_contact_selection(message, found_contacts):
+    if not found_contacts:
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(message.chat.id, '<b>Нет найденных контактов: 🥲</b>', reply_markup=markup,parse_mode='html')
+
+        return
+
+    try:
+        selected_index = int(message.text) - 1
+        if selected_index < 0 or selected_index >= len(found_contacts):
+            markup = types.InlineKeyboardMarkup()
+            mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+            markup.row(mmm)
+            bot.send_message(message.chat.id, '<b>Некорректный номер контакта: 😑</b>', reply_markup=markup,parse_mode='html')
+            bot.register_next_step_handler(message, handle_contact_selection, found_contacts)
+            return
+        selected_contact = found_contacts[selected_index][1]
+        selected_index = found_contacts[selected_index][0]
+    except (IndexError, ValueError):
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(message.chat.id, '<b>Некорректный ввод: 😑</b>', reply_markup=markup,parse_mode='html')
+        bot.register_next_step_handler(message, handle_contact_selection, found_contacts)
+        return
+
+    bot.send_message(message.chat.id, f"Выбранный контакт: {selected_contact['user name']}, {selected_contact['user phone']}, {selected_contact['user email']}")
+    markup = types.ReplyKeyboardMarkup(row_width=1, resize_keyboard=True)
+    
+    btn11 = types.KeyboardButton("Изменить имя")
+    btn22 = types.KeyboardButton("Изменить телефон")
+    btn33 = types.KeyboardButton("Изменить email")
+    markup.add(btn11)
+    markup.add(btn22)
+    markup.add(btn33)
+    
+    bot.send_message(message.chat.id, '<b>Выберите пункт для изменения:</b>', reply_markup=markup,parse_mode='html')
+    bot.register_next_step_handler(message, user_choice, selected_contact, selected_index)
+
+
+def user_choice(message, selected_contact, selected_index):
+    if message.text == "Изменить имя":
+        bot.send_message(message.chat.id, "Введите новое имя:")
+        bot.register_next_step_handler(message, update_name, selected_contact, selected_index)
+    elif message.text == "Изменить телефон":
+        bot.send_message(message.chat.id, "Введите новый телефон:")
+        bot.register_next_step_handler(message, update_phone, selected_contact, selected_index)
+    elif message.text == "Изменить email":
+        bot.send_message(message.chat.id, "Введите новый email:")
+        bot.register_next_step_handler(message, update_email, selected_contact, selected_index)
+
+
+def update_name(message, selected_contact, selected_index):
+    new_name = message.text.strip()
+    selected_contact['user name'] = new_name
+    update_contacts(selected_index, selected_contact)
+    markup = types.InlineKeyboardMarkup()
+    mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+    markup.row(mmm)
+    bot.send_message(message.chat.id, f"Имя успешно изменено на: {new_name} ✅", reply_markup=markup,parse_mode='html')
+
+
+def update_phone(message, selected_contact, selected_index):
+    new_phone = message.text.strip()
+    selected_contact['user phone'] = new_phone
+    update_contacts(selected_index, selected_contact)
+    markup = types.InlineKeyboardMarkup()
+    mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+    markup.row(mmm)
+    bot.send_message(message.chat.id, f"Телефон успешно изменено на: {new_phone} ✅", reply_markup=markup,parse_mode='html')
+
+
+def update_email(message, selected_contact, selected_index):
+    new_email = message.text.strip()
+    selected_contact['user email'] = new_email
+    update_contacts(selected_index, selected_contact)
+    markup = types.InlineKeyboardMarkup()
+    mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+    markup.row(mmm)
+    bot.send_message(message.chat.id, f"Email успешно изменено на: {new_email} ✅", reply_markup=markup,parse_mode='html')
+
+
+def update_contacts(index, new_contact):
+    with open('users.json', 'r', encoding='utf-8') as file:
+        contacts = json.load(file)
+    contacts[index] = new_contact
+    with open('users.json', 'w', encoding='utf-8') as file:
+        json.dump(contacts, file, ensure_ascii=False, indent=4)
+    
+    contacts.append(new_contact)
