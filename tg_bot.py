@@ -87,3 +87,113 @@ def search_contacts(message):
         mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
         markup.row(mmm)
         bot.send_message(message.chat.id, "<b>Произошла ошибка при чтении файла контактов:</b> 🥲", reply_markup=markup,parse_mode='html')        
+
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'add')
+def add_contact(callback):
+    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    btn1 = types.KeyboardButton("Да")
+    btn2 = types.KeyboardButton("Нет")
+    markup.add(btn1, btn2)
+    bot.send_message(callback.message.chat.id, "Хотите добавить имя для данного контакта? 🧐", reply_markup=markup)
+    bot.register_next_step_handler(callback.message, process_name_answer, {})
+
+def process_name_answer(message, user_info):
+    if message.text == "Да":
+        bot.send_message(message.chat.id, "Введите имя для контакта:")
+        bot.register_next_step_handler(message, process_phone_answer, user_info)
+    elif message.text == "Нет":
+        user_info["user name"] = "Пусто"
+        process_phone_answer(message, user_info)
+    else:
+        markup = types.InlineKeyboardMarkup()
+        ttt = types.InlineKeyboardButton('Возврат в меню. Попробуйте заного! 😤', callback_data='open')
+        markup.row(ttt)
+        bot.send_message(message.chat.id, '<b>Ошибка ввода 🤌</b>', reply_markup=markup,parse_mode='html')
+        bot.register_next_step_handler(message, process_name_answer, user_info)
+
+def process_phone_answer(message, user_info):
+    if message.text != "Нет":
+        user_info["user name"] = message.text
+    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    btn1 = types.KeyboardButton("Да")
+    btn2 = types.KeyboardButton("Нет")
+    markup.row(btn1, btn2)
+    bot.send_message(message.chat.id, "Хотите добавить номер телефона для данного контакта? 🧐", reply_markup=markup)
+    bot.register_next_step_handler(message, process_phone_input, user_info)
+
+def process_phone_input(message, user_info):
+    if message.text == "Да":
+        user_info["user phone"] = []
+        bot.send_message(message.chat.id, "Введите номер телефона для контакта:")
+        bot.register_next_step_handler(message, process_phone_save, user_info)
+    elif message.text == "Нет":
+        user_info["user phone"] = "Пусто"
+        process_email_answer(message, user_info)
+    else:
+        markup = types.InlineKeyboardMarkup()
+        jjj = types.InlineKeyboardButton('Возврат в меню. Попробуйте заного! 😤', callback_data='open')
+        markup.row(jjj)
+        bot.send_message(message.chat.id, '<b>Ошибка ввода 🤌</b>', reply_markup=markup,parse_mode='html')        
+        bot.register_next_step_handler(message, process_phone_input, user_info)
+
+def process_phone_save(message, user_info):
+    user_info["user phone"].append(message.text)
+    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    btn1 = types.KeyboardButton("Да")
+    btn2 = types.KeyboardButton("Нет")
+    markup.row(btn1, btn2)
+    bot.send_message(message.chat.id, "Хотите добавить еще один номер телефона для данного контакта? 🧐", reply_markup=markup)
+    bot.register_next_step_handler(message, process_additional_phone, user_info)
+
+def process_additional_phone(message, user_info):
+    if message.text == "Да":
+        bot.send_message(message.chat.id, "Введите дополнительный номер телефона для контакта:")
+        bot.register_next_step_handler(message, process_phone_save, user_info)
+    elif message.text == "Нет":
+        process_email_answer(message, user_info)
+    else:
+        markup = types.InlineKeyboardMarkup()
+        vvv = types.InlineKeyboardButton('Возврат в меню. Попробуйте заного! 😤', callback_data='open')
+        markup.row(vvv)
+        bot.send_message(message.chat.id, '<b>Ошибка ввода 🤌</b>', reply_markup=markup,parse_mode='html')
+        bot.register_next_step_handler(message, process_additional_phone, user_info)
+
+def process_email_answer(message, user_info):
+    markup = types.ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)
+    btn1 = types.KeyboardButton("Да")
+    btn2 = types.KeyboardButton("Нет")
+    markup.add(btn1, btn2)
+    bot.send_message(message.chat.id, "Хотите добавить email для данного контакта? 🧐", reply_markup=markup)
+    bot.register_next_step_handler(message, process_email_save, user_info)
+
+def process_email_save(message, user_info):
+    if message.text == "Да":
+        bot.send_message(message.chat.id, "Введите email для контакта:")
+        bot.register_next_step_handler(message, save_contact, user_info)
+    elif message.text == "Нет":
+        user_info["user email"] = "Пусто"
+        save_contact(message, user_info)
+    else:
+        markup = types.InlineKeyboardMarkup()
+        zzz = types.InlineKeyboardButton('Возврат в меню. Попробуйте заного! 😤', callback_data='open')
+        markup.row(zzz)
+        bot.send_message(message.chat.id, '<b>Ошибка ввода 🤌</b>', reply_markup=markup,parse_mode='html')   
+        bot.register_next_step_handler(message, process_email_save, user_info)
+
+def save_contact(message, user_info):
+    if message.text != "Нет":
+        user_info["user email"] = message.text
+    try:
+        with open("users.json", "r") as file:
+            data = json.load(file)
+    except (FileNotFoundError,json.JSONDecodeError):
+        data = []
+    data.append(user_info)
+    with open("users.json", "w") as file:
+        json.dump(data, file, indent=4,ensure_ascii=False)
+    markup = types.InlineKeyboardMarkup()
+    mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+    markup.row(mmm)
+    bot.send_message(message.chat.id, '<b>Контакт сохранен ✍️.</b>', reply_markup=markup,parse_mode='html')
+
