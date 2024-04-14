@@ -45,3 +45,45 @@ def show_contacts(callback):
         mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
         markup.row(mmm)
         bot.send_message(callback.message.chat.id, "<b>Список контактов пуст:</b> 🥲", reply_markup=markup,parse_mode='html')
+
+
+@bot.callback_query_handler(func=lambda callback: callback.data == 'find')
+def find_contact(callback):
+    try:
+        with open('users.json', 'r') as file:
+            contacts = json.load(file)
+        if contacts:
+            bot.send_message(callback.message.chat.id, "Введите элемент контакта:")
+            bot.register_next_step_handler(callback.message, search_contacts)
+        else:
+            bot.send_message(callback.message.chat.id, "Контактов нет")
+    except (FileNotFoundError, json.JSONDecodeError):
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(callback.message.chat.id, "<b>Список контактов пуст:</b> 🥲", reply_markup=markup,parse_mode='html')
+
+def search_contacts(message):
+    user_input = message.text
+    try:
+        with open('users.json', 'r') as file:
+            contacts = json.load(file)
+        found_contacts = []
+        for contact in contacts:
+            if user_input in contact.get('user name', '') or \
+               user_input in contact.get('user phone', '') or \
+               user_input in contact.get('user email', ''):
+                found_contacts.append(contact)
+        if found_contacts:
+            response = "\n".join([f"Имя: {contact['user name']}, Телефон: {contact['user phone']},  Email: {contact['user email']}" for contact in found_contacts])
+            markup = types.InlineKeyboardMarkup()
+            btn = types.InlineKeyboardButton('Вернуться в меню', callback_data='open')
+            markup.row(btn)
+            bot.send_message(message.chat.id, response, reply_markup=markup)
+        else:
+            bot.send_message(message.chat.id, f"Контакт с '{user_input}' не найден")
+    except (FileNotFoundError, json.JSONDecodeError):
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(message.chat.id, "<b>Произошла ошибка при чтении файла контактов:</b> 🥲", reply_markup=markup,parse_mode='html')        
