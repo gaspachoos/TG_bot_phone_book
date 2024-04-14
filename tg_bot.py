@@ -31,3 +31,17 @@ def open_menu(callback):
     markup.row(btn6, btn7)
     bot.send_message(callback.message.chat.id, '<b>Меню:</b>', reply_markup=markup,parse_mode='html')
 
+@bot.callback_query_handler(func=lambda callback: callback.data == 'show')
+def show_contacts(callback):
+    try:
+        with open('users.json', 'r') as file:
+            contacts = json.load(file)
+        response = "<b>Контакты:</b>\n"
+        for contact in contacts:
+            response += f"Имя: {contact.get('user name', 'Неизвестно')}, Телефон: {contact.get('user phone', 'Нет')}, Email: {contact.get('user email', 'Нет')} \n"
+        bot.send_message(callback.message.chat.id, response, parse_mode='html')
+    except (FileNotFoundError, json.JSONDecodeError):
+        markup = types.InlineKeyboardMarkup()
+        mmm = types.InlineKeyboardButton('Возврат в меню.', callback_data='open')
+        markup.row(mmm)
+        bot.send_message(callback.message.chat.id, "<b>Список контактов пуст:</b> 🥲", reply_markup=markup,parse_mode='html')
