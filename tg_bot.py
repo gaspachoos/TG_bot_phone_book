@@ -5,7 +5,7 @@ from telebot import types
 
 empty = True
 
-API_TOKEN = '6969338848:AAEJI6ASfd633tWXQASWRfDmXSiSylDPrYg'
+API_TOKEN = 'api key'
 bot = telebot.TeleBot(API_TOKEN)
 
 
